@@ -1,0 +1,795 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Hammadde Fire Takip</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Düzen: solda sekme menüsü, sağda çalışma alanı; telefonda menü üstte kaydırılır.
+   Renk: soğuk gri zemin, uyarı turuncusu vurgu, Excel'deki sarı giriş hücresi korunur. */
+:root{
+  --bg:#eceff2; --surface:#ffffff; --surface2:#f6f8fa; --ink:#1b232b; --muted:#5a6672; --line:#d3d9df;
+  --accent:#c2410c; --accent-ink:#ffffff; --accent-soft:#fde8dc;
+  --input:#fff6d1; --input-line:#e6d58a; --filled:#e3f4e8; --filled-line:#a9d6b6;
+  --ok:#1b7f45; --warn:#9a6700; --crit:#c1272d; --crit-soft:#fde4e4; --info:#1f5fa8;
+  --font:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,"Cascadia Mono",Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#12171c; --surface:#1a2128; --surface2:#202931; --ink:#e7ebef; --muted:#9aa5b0; --line:#2d3740;
+  --accent:#f0783a; --accent-ink:#1a1006; --accent-soft:#3b2417;
+  --input:#3a3418; --input-line:#6b5f27; --filled:#173325; --filled-line:#2d6a49;
+  --ok:#52c883; --warn:#e0b341; --crit:#ff7b7b; --crit-soft:#3b1b1d; --info:#6aa7ec; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#12171c; --surface:#1a2128; --surface2:#202931; --ink:#e7ebef; --muted:#9aa5b0; --line:#2d3740;
+  --accent:#f0783a; --accent-ink:#1a1006; --accent-soft:#3b2417;
+  --input:#3a3418; --input-line:#6b5f27; --filled:#173325; --filled-line:#2d6a49;
+  --ok:#52c883; --warn:#e0b341; --crit:#ff7b7b; --crit-soft:#3b1b1d; --info:#6aa7ec; color-scheme:dark}
+
+*{box-sizing:border-box}
+html,body{height:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--font);font-size:14px;line-height:1.45;
+  padding-block:0;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+h1,h2,h3{margin:0;font-weight:600;text-wrap:balance}
+h2{font-size:20px}
+h3{font-size:15px}
+button,input,select,textarea{font:inherit;color:inherit}
+.app{display:grid;grid-template-columns:220px minmax(0,1fr);gap:20px;max-width:1500px;margin:0 auto;padding-block:16px}
+.side{position:sticky;top:env(safe-area-inset-top,0px);align-self:start;display:flex;flex-direction:column;gap:12px}
+.brand{padding:4px 6px 10px;border-bottom:1px solid var(--line)}
+.brand b{display:block;font-size:16px;letter-spacing:.01em}
+.brand span{color:var(--muted);font-size:12px}
+.nav{display:flex;flex-direction:column;gap:2px}
+.nav a{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:6px;color:var(--ink);text-decoration:none;cursor:pointer}
+.nav a:hover{background:var(--surface2)}
+.nav a[aria-current="page"]{background:var(--accent);color:var(--accent-ink);font-weight:600}
+.nav .grp{margin:10px 10px 2px;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.main{min-width:0;display:flex;flex-direction:column;gap:14px}
+.top{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px;justify-content:space-between}
+.top .ctl{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:99px;border:1px solid var(--line);background:var(--surface);font-size:12px;color:var(--muted)}
+.chip.ok{color:var(--ok);border-color:var(--filled-line);background:var(--filled)}
+.chip.err{color:var(--crit);border-color:var(--crit);background:var(--crit-soft)}
+.chip.busy{color:var(--warn)}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:14px;min-width:0}
+.panel + .panel{margin-top:0}
+.head{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:end;justify-content:space-between;margin-bottom:12px}
+.head p{margin:2px 0 0;color:var(--muted);font-size:13px;max-width:70ch}
+.row{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:end}
+.field{display:flex;flex-direction:column;gap:3px;min-width:0}
+.field label{font-size:12px;color:var(--muted)}
+input[type=text],input[type=date],input[type=number],select{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:6px 8px;min-height:34px;min-width:0}
+input:focus-visible,select:focus-visible,button:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.btn{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:6px 12px;min-height:34px;cursor:pointer}
+.btn:hover{background:var(--surface2)}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:600}
+.btn.pri:hover{filter:brightness(1.07)}
+.btn.danger{color:var(--crit);border-color:var(--crit)}
+.btn[disabled]{opacity:.5;cursor:not-allowed}
+.btn.sm{min-height:28px;padding:2px 8px;font-size:12px}
+.tw{overflow-x:auto;border:1px solid var(--line);border-radius:6px;max-width:100%}
+table{border-collapse:separate;border-spacing:0;width:100%;font-variant-numeric:tabular-nums}
+th,td{padding:6px 8px;border-bottom:1px solid var(--line);border-right:1px solid var(--line);text-align:right;white-space:nowrap}
+th:last-child,td:last-child{border-right:0}
+tr:last-child td{border-bottom:0}
+thead th{background:var(--surface2);font-weight:600;font-size:12px;text-align:center;position:sticky;top:0;z-index:2}
+th.l,td.l{text-align:left}
+td.name{text-align:left;font-weight:500;position:sticky;left:0;background:var(--surface);z-index:1;min-width:150px}
+thead th.name{left:0;z-index:3;text-align:left}
+td.unit{text-align:center;color:var(--muted);font-size:12px}
+td.num{font-family:var(--mono);font-size:13px}
+td.tot,th.tot{background:var(--surface2);font-weight:600}
+td.zero{color:var(--muted)}
+tfoot td{background:var(--surface2);font-weight:600}
+td.in{padding:3px;background:var(--input);border-color:var(--input-line)}
+td.in.has{background:var(--filled);border-color:var(--filled-line)}
+td.in input{width:100%;min-width:104px;border:1px solid transparent;background:transparent;text-align:right;font-family:var(--mono);padding:4px 6px;min-height:30px}
+td.in input.note{min-width:140px;text-align:left;font-family:var(--font);font-size:13px}
+td.in input:focus{background:var(--surface);border-color:var(--accent)}
+td.in input.bad{border-color:var(--crit);background:var(--crit-soft)}
+.conv{display:block;font-size:11px;color:var(--muted);text-align:right;padding:0 6px 1px;min-height:14px;font-family:var(--mono)}
+.neg{color:var(--crit);font-weight:600}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px}
+.card{display:flex;flex-direction:column;gap:2px;text-align:left;background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:6px;padding:12px 14px;cursor:pointer;text-decoration:none;color:var(--ink)}
+.card:hover{background:var(--surface2)}
+.card b{font-size:14px}
+.card span{color:var(--muted);font-size:12px}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px}
+.stat{border:1px solid var(--line);border-radius:6px;padding:10px 12px;background:var(--surface2)}
+.stat small{display:block;color:var(--muted);font-size:12px}
+.stat strong{font-family:var(--mono);font-size:20px;font-weight:500}
+.stat.bad{background:var(--crit-soft);border-color:var(--crit)}
+.stat.bad strong{color:var(--crit);font-size:14px;font-family:var(--font)}
+.legend{display:flex;flex-wrap:wrap;gap:8px 18px;font-size:12px;color:var(--muted)}
+.sw{display:inline-block;width:14px;height:14px;border-radius:3px;vertical-align:-2px;margin-right:6px;border:1px solid var(--line)}
+.msg{padding:8px 12px;border-radius:6px;border:1px solid var(--line);background:var(--surface2);font-size:13px}
+.msg.bad{border-color:var(--crit);background:var(--crit-soft);color:var(--crit)}
+.msg.warn{border-color:var(--warn);color:var(--warn)}
+.msg.ok{border-color:var(--filled-line);background:var(--filled);color:var(--ok)}
+.empty{padding:28px 12px;text-align:center;color:var(--muted)}
+.docbox{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:6px 18px;font-size:13px;margin-bottom:12px;padding:10px 12px;border:1px solid var(--line);border-radius:6px;background:var(--surface2)}
+.docbox b{font-weight:600}
+.docbox em{font-style:normal;color:var(--muted)}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px}
+.hint{color:var(--muted);font-size:12px}
+.mono{font-family:var(--mono)}
+@media (max-width:860px){
+  .app{grid-template-columns:minmax(0,1fr);gap:10px;padding-top:8px}
+  .side{position:static}
+  .brand{display:none}
+  .nav{flex-direction:row;overflow-x:auto;padding-bottom:4px;gap:4px}
+  .nav a{white-space:nowrap;border:1px solid var(--line);background:var(--surface)}
+  .nav .grp{display:none}
+  td.in input{min-width:92px}
+}
+@media (prefers-reduced-motion:no-preference){.btn,.card,.nav a{transition:background .12s,filter .12s}}
+</style>
+
+<div id="login-screen" style="position:fixed;inset:0;z-index:1000;background:var(--bg);display:grid;place-items:center;padding:20px"><div class="panel" style="width:min(440px,100%);text-align:center;padding:28px"><h2>Hammadde Fire Takip</h2><p class="hint" style="margin:8px 0 20px">Yetkilendirilmiş Google hesabınızla giriş yapın.</p><button class="btn pri" id="google-login" style="width:100%;min-height:44px">Google hesabıyla giriş yap</button><div id="login-error" class="msg bad" hidden style="margin-top:12px"></div><p class="hint" style="margin-top:16px">Şirket hesabı veya kişisel Gmail kullanılabilir. Erişim yönetici tarafından tanımlanır.</p></div></div>
+<div class="app" id="application" style="display:none">
+  <aside class="side">
+    <div class="brand"><b>Hammadde Fire Takip</b><span id="brand-sub">UD-LS-001</span></div>
+    <nav class="nav" id="nav" aria-label="Sayfalar"></nav>
+  </aside>
+  <main class="main">
+    <div class="top">
+      <div class="ctl">
+        <span class="chip" id="todaychip"></span>
+        <span class="chip" id="connchip">Veritabanı bağlanıyor…</span>
+      </div>
+      <div class="ctl">
+        <div class="field" style="flex-direction:row;align-items:center;gap:6px"><label for="yearsel">Yıl</label>
+          <select id="yearsel"></select></div>
+        <span class="chip" id="savechip" aria-live="polite">Hazır</span><span class="chip" id="userchip"></span><button class="btn sm" id="logout-btn">Çıkış</button>
+      </div>
+    </div>
+    <div id="banner"></div>
+    <div id="view"></div>
+  </main>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+<script src="./firebase-config.js"></script><script src="./firebase-adapter.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+"use strict";
+/* ============ sabitler ============ */
+var MONTHS=["Ocak","Şubat","Mart","Nisan","Mayıs","Haziran","Temmuz","Ağustos","Eylül","Ekim","Kasım","Aralık"];
+var DAYS=["Pazar","Pazartesi","Salı","Çarşamba","Perşembe","Cuma","Cumartesi"];
+var DAYS3=["Paz","Pzt","Sal","Çar","Per","Cum","Cmt"];
+var SHIFTS={1:{name:"Vardiya 1",hours:"08:00-17:30"},2:{name:"Vardiya 2",hours:"17:30-02:30"}};
+var DEFAULT_PRODUCTS=[["Hücre Ribonlu","Kg"],["Hücre Ribonsuz","Kg"],["Ön Cam","Adet"],["Arka Cam","Adet"],["Ribbon 0,26mm","Kg"],
+ ["Busbar 4mm (0,30)","Kg"],["Busbar 6mm (0,30)","Kg"],["Eva (2. Encapsulant)","Kg"],["Epe (1. Encapsulant)","Kg"],["Çerçeve Uzun","Adet"],
+ ["Çerçeve Kısa","Adet"],["J-Box","Adet"],["Silikon-Sealant","Kg"],["Potting A-B","Kg"],["Ribbon Makarası","Adet"],["Busbar Makarası","Adet"]];
+var DEFAULT_DOC={title:"HAMMADDE FİRE TAKİP DOSYASI",docNo:"ÜD-LS-001",effective:"2025-01-21",rev:"0",revDate:"2027-01-04",page:"1",preparedBy:"M. Mücahit DANIŞAN"};
+var PAGES=[
+ ["ana","Ana Sayfa",""],["fire","Fire Girişi","Günlük, vardiya vardiya fire girişi"],["atik","Atık Gönderimi","Gönderilen atıkları tek tek gir"],
+ ["devir","Önceki Yıl Devir","Geçen yıldan kalan fire miktarı"],["haftalik","Haftalık Form","Haftayı seç, formu Excel olarak al"],
+ ["aylik","Aylık Rapor","Ay seç, ürün bazında toplam fire"],["yillik","Yıllık Rapor","Devir, yıllık fire, atık ve net kalan"],
+ ["amir","Amir Raporu","Tarih aralığında toplam fire"],["urun","Ürün Listesi","Ürünler, birimler, belge bilgileri"],["excel","Excel Aktarımı","Excel dosyasından al, Excel'e ver"],["users","Kullanıcı Yönetimi","Kullanıcı ekle, yetki ver ve pasife al"]];
+
+/* ============ durum ============ */
+var S={db:null,user:null,dl:null,canWrite:true,role:"personel",year:2027,
+  products:null,docinfo:null,fire:{},waste:{},carry:{},rows:[],loaded:{},route:"ana",
+  fireDate:null,weekIdx:null,month:null,amir:{from:"",to:""},wFilter:"all",flash:null,importPlan:null,imp:null};
+var unsubs=[];
+
+/* ============ yardımcılar ============ */
+function $(s,r){return (r||document).querySelector(s)}
+function $$(s,r){return Array.prototype.slice.call((r||document).querySelectorAll(s))}
+function esc(v){return String(v==null?"":v).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]})}
+function pad(n){return n<10?"0"+n:""+n}
+function iso(y,m,d){return y+"-"+pad(m)+"-"+pad(d)}
+function dFromISO(s){var p=s.split("-");return new Date(Date.UTC(+p[0],+p[1]-1,+p[2]))}
+function toISO(dt){return dt.getUTCFullYear()+"-"+pad(dt.getUTCMonth()+1)+"-"+pad(dt.getUTCDate())}
+function addDays(s,n){var d=dFromISO(s);d.setUTCDate(d.getUTCDate()+n);return toISO(d)}
+function dow(s){return dFromISO(s).getUTCDay()}
+function trDate(s){if(!s)return "";var p=s.split("-");return p[2]+"."+p[1]+"."+p[0]}
+function todayISO(){var d=new Date();return iso(d.getFullYear(),d.getMonth()+1,d.getDate())}
+var nf3=new Intl.NumberFormat("tr-TR",{maximumFractionDigits:3});
+var nf0=new Intl.NumberFormat("tr-TR",{maximumFractionDigits:0});
+function fnum(v,zeroDash){if(v==null||v==="")return "";if(zeroDash&&Math.abs(v)<1e-9)return "–";return nf3.format(Math.round(v*1000)/1000)}
+function isKg(p){return p&&String(p.unit).toLowerCase()==="kg"}
+function repUnit(p){return isKg(p)?"kg":"adet"}
+function toRep(p,v){return isKg(p)?v/1000:v}
+function pById(id){var l=S.products&&S.products.list||[];for(var i=0;i<l.length;i++)if(l[i].id===id)return l[i];return null}
+function pByName(n){var l=S.products&&S.products.list||[];var k=String(n||"").trim().toLowerCase();for(var i=0;i<l.length;i++)if(l[i].name.trim().toLowerCase()===k)return l[i];return null}
+function parseQty(str){
+  var s=String(str==null?"":str).trim();
+  if(s==="")return {empty:true};
+  if(s.charAt(0)==="=")s=s.slice(1);
+  s=s.replace(/\s/g,"").replace(/,/g,".");
+  if(!/^[0-9+\-*\/().]+$/.test(s))return {bad:true};
+  var v;try{v=Function('"use strict";return ('+s+')')()}catch(e){return {bad:true}}
+  if(typeof v!=="number"||!isFinite(v)||v<0)return {bad:true};
+  return {value:Math.round(v*1e6)/1e6};
+}
+function inNum(v){return v==null?"":String(v).replace(".",",")}
+function setSave(kind,text){var c=$("#savechip");c.className="chip "+(kind||"");c.textContent=text}
+function weeksOf(year){
+  var first=year+"-01-01",d=dow(first);var back=d===0?6:d-1;var mon=addDays(first,-back);var out=[];
+  while(mon<=year+"-12-31"){var fri=addDays(mon,4);out.push({mon:mon,fri:fri,label:weekLabel(mon,fri)});mon=addDays(mon,7)}
+  return out;
+}
+function weekLabel(mon,fri){
+  var a=dFromISO(mon),b=dFromISO(fri);
+  var da=pad(a.getUTCDate()),db_=pad(b.getUTCDate());
+  if(a.getUTCFullYear()!==b.getUTCFullYear())return da+" "+MONTHS[a.getUTCMonth()]+" "+a.getUTCFullYear()+" - "+db_+" "+MONTHS[b.getUTCMonth()]+" "+b.getUTCFullYear();
+  if(a.getUTCMonth()!==b.getUTCMonth())return da+" "+MONTHS[a.getUTCMonth()]+" - "+db_+" "+MONTHS[b.getUTCMonth()]+" "+b.getUTCFullYear();
+  return da+"-"+db_+" "+MONTHS[b.getUTCMonth()]+" "+b.getUTCFullYear();
+}
+
+/* ============ veri katmanı ============ */
+function rebuildRows(){
+  var out=[];
+  Object.keys(S.fire).forEach(function(id){
+    var d=S.fire[id];if(!d||!d.date||!d.values)return;
+    Object.keys(d.values).forEach(function(pid){var v=d.values[pid];if(typeof v==="number")out.push({date:d.date,shift:d.shift,pid:pid,v:v})});
+  });
+  S.rows=out;
+}
+function aggregate(from,to){
+  var m={};
+  S.rows.forEach(function(r){
+    if(r.date<from||r.date>to)return;
+    var o=m[r.pid]||(m[r.pid]={v1:0,v2:0});
+    if(r.shift===1)o.v1+=r.v;else o.v2+=r.v;
+  });
+  return m;
+}
+function wasteTotals(from,to){
+  var m={};Object.keys(S.waste).forEach(function(id){var w=S.waste[id];if(!w||(from&&w.date<from)||(to&&w.date>to))return;m[w.pid]=(m[w.pid]||0)+(+w.qty||0)});return m;
+}
+function carryFor(year){var c=S.carry[String(year-1)];return c&&c.values?c:{values:{},notes:{}}}
+var queues={};
+function enqueue(key,fn){
+  var p=(queues[key]||Promise.resolve()).then(fn);
+  queues[key]=p.catch(function(){});
+  return p;
+}
+function wrap(promise,okText){
+  setSave("busy","Kaydediliyor…");
+  return promise.then(function(r){setSave("ok",okText||"Kaydedildi");return r}).catch(function(e){
+    var c=e&&e.code,msg=e&&e.message||"";
+    setSave("err",c==="invalid_argument"?"Kayıt yetkiniz yok":c==="quota_exceeded"?"Veritabanı kotası dolu":"Kaydedilemedi ("+(c||"hata")+")");
+    throw e;
+  });
+}
+function writeFire(docId,date,shift,pid,value,note){
+  var ref=S.db.doc("fire/"+docId);
+  return wrap(S.db.runTransaction(function(tx){return tx.get(ref).then(function(snap){
+    var cur=snap.exists?snap.data():{date:date,shift:shift,values:{},notes:{}};
+    var values=Object.assign({},cur.values||{}),notes=Object.assign({},cur.notes||{});
+    if(value===null)delete values[pid];else if(value!==undefined)values[pid]=value;
+    if(note!==undefined){if(note==="")delete notes[pid];else notes[pid]=note}
+    if(!Object.keys(values).length&&!Object.keys(notes).length){if(snap.exists)tx.delete(ref);return;}
+    tx.set(ref,{date:date,shift:shift,values:values,notes:notes,createdBy:cur.createdBy||S.user.email,updatedAt:new Date().toISOString(),updatedBy:S.user.email,updatedByName:S.user.displayName||S.user.email},{merge:true});
+  })}),"Kaydedildi");
+}
+function setDoc(path,data){return enqueue(path,function(){return wrap(S.db.doc(path).set(Object.assign({},data,{updatedAt:new Date().toISOString(),updatedBy:S.user.email}),{merge:true}))})}
+
+/* ============ bağlantı ============ */
+function subscribe(){
+  var timer=setTimeout(function(){if(!S.loaded.fire)$("#connchip").textContent="Veritabanına şu an ulaşılamıyor"},10000);
+  function mark(k){S.loaded[k]=true;var all=S.loaded.fire&&S.loaded.waste&&S.loaded.carry&&S.loaded.config;
+    if(all){clearTimeout(timer);var c=$("#connchip");c.className="chip ok";c.textContent="Ortak veritabanı bağlı"}}
+  function err(e){var c=$("#connchip");c.className="chip err";c.textContent="Veri okunamadı ("+(e&&e.code||"hata")+")"}
+  unsubs.push(S.db.collection("fire").onSnapshot(function(sn){var m={};sn.docs.forEach(function(d){m[d.id]=d.data()});S.fire=m;rebuildRows();mark("fire");softRender()},err));
+  unsubs.push(S.db.collection("waste").onSnapshot(function(sn){var m={};sn.docs.forEach(function(d){m[d.id]=d.data()});S.waste=m;mark("waste");softRender()},err));
+  unsubs.push(S.db.collection("carry").onSnapshot(function(sn){var m={};sn.docs.forEach(function(d){m[d.id]=d.data()});S.carry=m;mark("carry");softRender()},err));
+  unsubs.push(S.db.collection("config").onSnapshot(function(sn){
+    sn.docs.forEach(function(d){if(d.id==="products")S.products=d.data();if(d.id==="docinfo")S.docinfo=d.data()});
+    mark("config");softRender()},err));
+}
+var pendingRender=false;
+function softRender(){
+  var a=document.activeElement;
+  if(a&&a.tagName==="INPUT"&&$("#view").contains(a)&&a.type!=="file"){pendingRender=true;return}
+  render();
+}
+document.addEventListener("focusout",function(){if(pendingRender){setTimeout(function(){var a=document.activeElement;if(!(a&&a.tagName==="INPUT"&&$("#view").contains(a))){pendingRender=false;render()}},60)}});
+
+/* ============ ortak görünümler ============ */
+function docBox(){
+  var d=Object.assign({},DEFAULT_DOC,S.docinfo||{});
+  return '<div class="docbox"><div><em>Doküman:</em> <b>'+esc(d.title)+'</b></div><div><em>Doküman No:</em> <b>'+esc(d.docNo)+'</b></div>'+
+   '<div><em>Hazırlayan:</em> <b>'+esc(d.preparedBy)+'</b></div><div><em>Yürürlük Tarihi:</em> <b>'+esc(trDate(d.effective))+'</b></div>'+
+   '<div><em>Rev No./Tarihi:</em> <b>'+esc(d.rev)+' / '+esc(trDate(d.revDate))+'</b></div><div><em>Sayfa No:</em> <b>'+esc(d.page)+'</b></div></div>';
+}
+function needProducts(){
+  if(S.products&&S.products.list&&S.products.list.length)return "";
+  return '<div class="panel"><div class="empty"><b>Ürün listesi henüz yüklenmedi.</b><br>Excel dosyanızdan almak için “Excel Aktarımı”, varsayılan 16 kalemi yüklemek için aşağıdaki düğmeyi kullanın.<br><br>'+
+    '<button class="btn pri" data-act="seedproducts"'+(S.canWrite?"":" disabled")+'>Varsayılan ürün listesini yükle</button></div></div>';
+}
+function productOptions(sel,allLabel){
+  var h=allLabel?'<option value="">'+esc(allLabel)+'</option>':"";
+  (S.products.list||[]).forEach(function(p){h+='<option value="'+esc(p.id)+'"'+(p.id===sel?" selected":"")+'>'+esc(p.name)+'</option>'});return h;
+}
+function sel(id,opts,val){return '<select id="'+id+'">'+opts.map(function(o){return '<option value="'+esc(o[0])+'"'+(String(o[0])===String(val)?" selected":"")+'>'+esc(o[1])+'</option>'}).join("")+'</select>'}
+function dis(){return S.canWrite?"":" disabled"}
+
+/* ============ sayfalar ============ */
+var V={};
+V.ana=function(){
+  var rows=S.rows.length,today=todayISO(),t=S.rows.filter(function(r){return r.date===today}).length;
+  var wc=Object.keys(S.waste).length;
+  var neg=negativeNet();
+  var cards=PAGES.filter(function(p){return p[0]!=="ana"}).map(function(p){return '<a class="card" href="#'+p[0]+'"><b>'+esc(p[1])+'</b><span>'+esc(p[2])+'</span></a>'}).join("");
+  return '<div class="panel"><div class="head"><div><h2>Hammadde Fire Takip — '+S.year+'</h2><p>Vardiya bazında fire girin; haftalık, aylık, yıllık ve amir raporları otomatik hesaplanır.</p></div></div>'+
+   '<div class="stats">'+
+   '<div class="stat"><small>Girilen fire kaydı</small><strong>'+nf0.format(rows)+' satır</strong></div>'+
+   '<div class="stat"><small>Bugün girilen kayıt</small><strong>'+nf0.format(t)+' satır</strong></div>'+
+   '<div class="stat"><small>Gönderilen atık kaydı</small><strong>'+nf0.format(wc)+' kayıt</strong></div>'+
+   (neg.length?'<div class="stat bad"><small>Net fire kontrolü</small><strong>KONTROL ET: '+neg.length+' üründe gönderilen atık, toplam fireyi aşıyor ('+esc(neg.join(", "))+')</strong></div>'
+     :'<div class="stat"><small>Net fire kontrolü</small><strong style="font-size:16px;font-family:var(--font)">Sorun yok</strong></div>')+
+   '</div></div>'+needProducts()+
+   '<div class="panel"><h3 style="margin-bottom:10px">Sayfalar</h3><div class="cards">'+cards+'</div></div>'+
+   '<div class="panel"><h3 style="margin-bottom:8px">Bilgi</h3><div class="legend" style="flex-direction:column;gap:6px;color:var(--ink);font-size:13px">'+
+   '<div><span class="sw" style="background:var(--input);border-color:var(--input-line)"></span>Sarı hücre: buraya yaz.</div>'+
+   '<div><span class="sw" style="background:var(--filled);border-color:var(--filled-line)"></span>Yeşil hücre: veri girilmiş.</div>'+
+   '<div>Kg birimli kalemlere GRAM, Adet birimli kalemlere ADET yazın. Toplamlı yazım için hücreye 944,8+1737,5 gibi bir toplama yazabilirsiniz (ondalık için virgül).</div>'+
+   '<div>Atık gönderimi: her gönderimde bir satır ekleyin (kg’lılarda KG, adetlilerde ADET). Yıllık raporda toplanır ve net fireden düşer.</div>'+
+   '<div>Yıl sonunda Yıllık Rapor’daki NET KALAN FİRE değeri, gelecek yılın Önceki Yıl Devir sayfasına aktarılır.</div></div></div>';
+};
+function negativeNet(){
+  if(!S.products)return [];var y=S.year,ag=aggregate(y+"-01-01",y+"-12-31"),wt=wasteTotals(y+"-01-01",y+"-12-31"),c=carryFor(y),out=[];
+  (S.products.list||[]).forEach(function(p){var a=ag[p.id]||{v1:0,v2:0};var tot=toRep(p,a.v1+a.v2)+(+c.values[p.id]||0);if(tot-(wt[p.id]||0)<-1e-9)out.push(p.name)});return out;
+}
+
+V.fire=function(){
+  var np=needProducts();if(np)return np;
+  var date=S.fireDate||(todayISO().slice(0,4)==String(S.year)?todayISO():S.year+"-01-01");S.fireDate=date;
+  var wd=dow(date),weekend=(wd===0||wd===6);
+  var ids=[date+"_1",date+"_2"];var docs=[S.fire[ids[0]],S.fire[ids[1]]];
+  var rowsH=(S.products.list||[]).map(function(p){
+    var cells="";
+    [1,2].forEach(function(sh,i){
+      var d=docs[i],v=d&&d.values?d.values[p.id]:undefined,n=d&&d.notes?d.notes[p.id]:"";
+      cells+='<td class="in'+(v!=null?" has":"")+'"><input type="text" inputmode="decimal" autocomplete="off" data-doc="'+ids[i]+'" data-sh="'+sh+'" data-pid="'+esc(p.id)+'" data-k="v" value="'+esc(v!=null?inNum(v):"")+'" aria-label="'+esc(p.name+" "+SHIFTS[sh].name)+'"'+dis()+'><span class="conv" data-conv="'+ids[i]+'|'+esc(p.id)+'">'+(v!=null&&isKg(p)?fnum(v/1000)+" kg":"")+'</span></td>'+
+        '<td class="in"><input type="text" class="note" autocomplete="off" data-doc="'+ids[i]+'" data-sh="'+sh+'" data-pid="'+esc(p.id)+'" data-k="n" value="'+esc(n||"")+'" placeholder="açıklama" aria-label="'+esc(p.name+" açıklama")+'"'+dis()+'></td>';
+    });
+    return '<tr><td class="name">'+esc(p.name)+'</td><td class="unit">'+esc(p.unit)+'</td>'+cells+'</tr>';
+  }).join("");
+  var cnt=S.rows.filter(function(r){return r.date===date}).length;
+  return '<div class="panel"><div class="head"><div><h2>Fire Girişi</h2><p>Kg birimli kalemlere gram, adetlilere adet yazın. Her hücre girildiği anda kaydedilir; Enter bir alt satıra geçer.</p></div>'+
+   '<div class="row"><div class="field"><label for="fdate">Tarih</label><input type="date" id="fdate" value="'+date+'"></div>'+
+   '<button class="btn" data-act="fprev" title="Önceki iş günü">◀ Önceki gün</button><button class="btn" data-act="fnext" title="Sonraki iş günü">Sonraki gün ▶</button>'+
+   '<button class="btn" data-act="ftoday">Bugün</button></div></div>'+
+   '<div style="margin-bottom:10px;display:flex;flex-wrap:wrap;gap:8px;align-items:center"><b>'+trDate(date)+' '+DAYS[wd]+'</b><span class="chip">'+cnt+' dolu satır</span>'+
+   (weekend?'<span class="msg warn" style="padding:2px 10px">Hafta sonu: Excel dosyasında bu gün için satır yoktu; yine de girilebilir.</span>':"")+
+   (S.canWrite?"":'<span class="msg bad" style="padding:2px 10px">Bu dosyada yazma yetkiniz yok, yalnızca görüntüleyebilirsiniz.</span>')+'</div>'+
+   '<div class="tw"><table><thead><tr><th class="name" rowspan="2">Ürün</th><th rowspan="2">Birim</th>'+
+   '<th colspan="2">Vardiya 1 · '+SHIFTS[1].hours+'</th><th colspan="2">Vardiya 2 · '+SHIFTS[2].hours+'</th></tr>'+
+   '<tr><th style="top:31px">Fire miktarı</th><th style="top:31px">Açıklama</th><th style="top:31px">Fire miktarı</th><th style="top:31px">Açıklama</th></tr></thead><tbody>'+rowsH+'</tbody></table></div></div>';
+};
+
+V.atik=function(){
+  var np=needProducts();if(np)return np;
+  var ids=Object.keys(S.waste).filter(function(id){return !S.wFilter||S.wFilter==="all"||S.waste[id].pid===S.wFilter});
+  ids.sort(function(a,b){var x=S.waste[a],y=S.waste[b];return x.date<y.date?1:x.date>y.date?-1:0});
+  var list=ids.map(function(id){var w=S.waste[id],p=pById(w.pid);
+    return '<tr><td class="l">'+trDate(w.date)+'</td><td class="l">'+esc(p?p.name:w.pid)+'</td><td class="num">'+fnum(w.qty)+'</td><td class="unit">'+esc(p?repUnit(p):"")+'</td><td class="l">'+esc(w.ref||"")+'</td><td class="l">'+esc(w.buyer||"")+'</td><td class="l">'+esc(w.note||"")+'</td>'+
+      '<td><button class="btn sm danger" data-act="wdel" data-id="'+esc(id)+'"'+dis()+'>Sil</button></td></tr>'}).join("");
+  var tot={};ids.forEach(function(id){var w=S.waste[id];tot[w.pid]=(tot[w.pid]||0)+(+w.qty||0)});
+  var totH=Object.keys(tot).map(function(pid){var p=pById(pid);return '<span class="chip">'+esc(p?p.name:pid)+': <b class="mono">'+fnum(tot[pid])+' '+esc(p?repUnit(p):"")+'</b></span>'}).join(" ");
+  return '<div class="panel"><div class="head"><div><h2>Atık Gönderimi</h2><p>Her atık gönderiminde bir satır ekleyin. Miktar: kg’lı ürünlerde KG, adetli ürünlerde ADET.</p></div></div>'+
+   '<div class="row"><div class="field"><label for="w-date">Tarih</label><input type="date" id="w-date" value="'+todayISO()+'"></div>'+
+   '<div class="field"><label for="w-pid">Ürün</label><select id="w-pid"><option value="">Seçin…</option>'+productOptions("")+'</select></div>'+
+   '<div class="field"><label for="w-qty">Miktar <span id="w-unit" class="hint"></span></label><input type="text" inputmode="decimal" id="w-qty" style="width:120px"></div>'+
+   '<div class="field"><label for="w-ref">İrsaliye / Belge No</label><input type="text" id="w-ref" style="width:150px"></div>'+
+   '<div class="field"><label for="w-buyer">Alıcı Firma</label><input type="text" id="w-buyer" style="width:170px"></div>'+
+   '<div class="field"><label for="w-note">Açıklama</label><input type="text" id="w-note" style="width:190px"></div>'+
+   '<button class="btn pri" data-act="wadd"'+dis()+'>Kaydı ekle</button></div><div id="w-err" class="msg bad" hidden style="margin-top:10px"></div></div>'+
+   '<div class="panel"><div class="head"><h3>Gönderilen atıklar ('+ids.length+' kayıt)</h3><div class="field"><label for="w-filter">Ürün süzgeci</label><select id="w-filter"><option value="all">Tüm ürünler</option>'+productOptions(S.wFilter==="all"?"":S.wFilter)+'</select></div></div>'+
+   (totH?'<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px">'+totH+'</div>':"")+
+   (ids.length?'<div class="tw"><table><thead><tr><th class="l">Tarih</th><th class="l">Ürün</th><th>Miktar</th><th>Birim</th><th class="l">İrsaliye / Belge No</th><th class="l">Alıcı Firma</th><th class="l">Açıklama</th><th></th></tr></thead><tbody>'+list+'</tbody></table></div>'
+     :'<div class="empty">Henüz atık gönderimi kaydı yok. Yukarıdaki formdan ilk kaydı ekleyin.</div>')+'</div>';
+};
+
+V.devir=function(){
+  var np=needProducts();if(np)return np;
+  var y=S.year-1,c=carryFor(S.year);
+  var rows=(S.products.list||[]).map(function(p){var v=c.values[p.id],n=c.notes&&c.notes[p.id]||"";
+    return '<tr><td class="name">'+esc(p.name)+'</td><td class="unit">'+esc(repUnit(p))+'</td><td class="in'+(v!=null?" has":"")+'"><input type="text" inputmode="decimal" data-cpid="'+esc(p.id)+'" data-k="v" value="'+esc(v!=null?inNum(v):"")+'" aria-label="'+esc(p.name+" devir")+'"'+dis()+'></td><td class="in"><input class="note" type="text" data-cpid="'+esc(p.id)+'" data-k="n" value="'+esc(n)+'" placeholder="açıklama"'+dis()+'></td></tr>'}).join("");
+  return '<div class="panel"><div class="head"><div><h2>Önceki Yıldan Devreden Fire</h2><p>Devir yılı: <b>'+y+'</b>. Geçen yılın NET KALAN fire miktarını (kg / adet cinsinden) yazın. Yıllık raporda otomatik eklenir.</p></div></div>'+
+   '<div class="tw"><table><thead><tr><th class="name">Ürün</th><th>Rapor Birimi</th><th>Devreden Miktar</th><th>Açıklama</th></tr></thead><tbody>'+rows+'</tbody></table></div></div>';
+};
+
+function weekTable(w){
+  var days=[0,1,2,3,4].map(function(i){return addDays(w.mon,i)});
+  var ag=aggregate(days[0],days[4]);var per={};
+  S.rows.forEach(function(r){if(r.date<days[0]||r.date>days[4])return;var k=r.pid+"|"+r.date+"|"+r.shift;per[k]=(per[k]||0)+r.v});
+  var head1='<tr><th class="name" rowspan="3">Ürün</th><th rowspan="3">Birim</th>'+days.map(function(d,i){return '<th colspan="2">'+DAYS[i+1].toLocaleUpperCase("tr-TR")+'</th>'}).join("")+'<th rowspan="3" class="tot">Vardiya 1 Toplam</th><th rowspan="3" class="tot">Vardiya 2 Toplam</th><th rowspan="3" class="tot">Toplam</th><th rowspan="3" class="tot">Rapor Toplamı (kg / adet)</th></tr>';
+  var head2='<tr>'+days.map(function(d){return '<th colspan="2" style="top:31px">'+trDate(d)+'</th>'}).join("")+'</tr>';
+  var head3='<tr>'+days.map(function(){return '<th style="top:62px">V1 08:00-17:30</th><th style="top:62px">V2 17:30-02:30</th>'}).join("")+'</tr>';
+  var body=(S.products.list||[]).map(function(p){
+    var a=ag[p.id]||{v1:0,v2:0},c="";
+    days.forEach(function(d){[1,2].forEach(function(sh){var v=per[p.id+"|"+d+"|"+sh];c+='<td class="num'+(v?"":" zero")+'">'+(v?fnum(v):"–")+'</td>'})});
+    return '<tr><td class="name">'+esc(p.name)+'</td><td class="unit">'+esc(p.unit)+'</td>'+c+'<td class="num tot">'+fnum(a.v1,1)+'</td><td class="num tot">'+fnum(a.v2,1)+'</td><td class="num tot">'+fnum(a.v1+a.v2,1)+'</td><td class="num tot">'+fnum(toRep(p,a.v1+a.v2),1)+' '+esc(repUnit(p))+'</td></tr>';
+  }).join("");
+  return '<div class="tw"><table><thead>'+head1+head2+head3+'</thead><tbody>'+body+'</tbody></table></div>';
+}
+V.haftalik=function(){
+  var np=needProducts();if(np)return np;
+  var ws=weeksOf(S.year);if(S.weekIdx==null||S.weekIdx>=ws.length){var t=todayISO(),k=0;ws.forEach(function(w,i){if(t>=w.mon)k=i});S.weekIdx=t.slice(0,4)==String(S.year)?k:0}
+  var w=ws[S.weekIdx];
+  return '<div class="panel"><div class="head"><div><h2>Haftalık Form</h2><p>Haftayı seçin; form Pazartesi–Cuma, vardiya bazında toplamları gösterir. Kg’lı kalemler gram olarak girilir, son sütun kg’a çevrilmiş toplamdır.</p></div>'+
+   '<div class="row"><div class="field"><label for="wk-sel">Hafta</label>'+sel("wk-sel",ws.map(function(x,i){return [i,(i+1)+". hafta · "+x.label]}),S.weekIdx)+'</div>'+
+   '<button class="btn" data-act="wkprev">◀</button><button class="btn" data-act="wknext">▶</button>'+
+   '<button class="btn pri" data-act="wkxlsx">Haftalık formu Excel olarak indir</button></div></div>'+
+   docBox()+'<div class="row" style="margin-bottom:8px"><b>Tarih aralığı:</b> <span>'+esc(w.label)+'</span></div>'+weekTable(w)+'</div>';
+};
+
+function monthRange(y,m){var last=new Date(Date.UTC(y,m,0)).getUTCDate();return [iso(y,m,1),iso(y,m,last)]}
+V.aylik=function(){
+  var np=needProducts();if(np)return np;
+  if(S.month==null){var tm=todayISO();S.month=(+tm.slice(0,4)===S.year)?+tm.slice(5,7):1}
+  var r=monthRange(S.year,S.month),ag=aggregate(r[0],r[1]);
+  var tb=(S.products.list||[]).map(function(p){var a=ag[p.id]||{v1:0,v2:0};
+    return '<tr><td class="name">'+esc(p.name)+'</td><td class="unit">'+esc(repUnit(p))+'</td><td class="num">'+fnum(toRep(p,a.v1),1)+'</td><td class="num">'+fnum(toRep(p,a.v2),1)+'</td><td class="num tot">'+fnum(toRep(p,a.v1+a.v2),1)+'</td></tr>'}).join("");
+  return '<div class="panel"><div class="head"><div><h2>Aylık Fire Raporu — '+S.year+'</h2><p>'+MONTHS[S.month-1]+' ayı ('+trDate(r[0])+' – '+trDate(r[1])+'). Değerler kg (adetliler adet) cinsindendir.</p></div>'+
+   '<div class="field"><label for="m-sel">Ay</label>'+sel("m-sel",MONTHS.map(function(n,i){return [i+1,n]}),S.month)+'</div></div>'+
+   '<div class="tw"><table><thead><tr><th class="name">Ürün</th><th>Rapor Birimi</th><th>Vardiya 1</th><th>Vardiya 2</th><th class="tot">Toplam</th></tr></thead><tbody>'+tb+'</tbody></table></div></div>';
+};
+
+V.yillik=function(){
+  var np=needProducts();if(np)return np;
+  var y=S.year,c=carryFor(y),wt=wasteTotals(y+"-01-01",y+"-12-31");
+  var mon=[];for(var m=1;m<=12;m++){var r=monthRange(y,m);mon.push(aggregate(r[0],r[1]))}
+  var yr=aggregate(y+"-01-01",y+"-12-31");
+  var neg=[];
+  var tb=(S.products.list||[]).map(function(p){
+    var cells="";var sumY=0;
+    for(var m=0;m<12;m++){var a=mon[m][p.id]||{v1:0,v2:0},v=toRep(p,a.v1+a.v2);cells+='<td class="num'+(v?"":" zero")+'">'+fnum(v,1)+'</td>'}
+    var a=yr[p.id]||{v1:0,v2:0},v1=toRep(p,a.v1),v2=toRep(p,a.v2),tot=v1+v2,dv=+c.values[p.id]||0,all=tot+dv,wst=wt[p.id]||0,net=all-wst;
+    if(net<-1e-9)neg.push(p.name);
+    return '<tr><td class="name">'+esc(p.name)+'</td><td class="unit">'+esc(repUnit(p))+'</td>'+cells+'<td class="num tot">'+fnum(v1,1)+'</td><td class="num tot">'+fnum(v2,1)+'</td><td class="num tot">'+fnum(tot,1)+'</td><td class="num">'+fnum(dv,1)+'</td><td class="num tot">'+fnum(all,1)+'</td><td class="num">'+fnum(wst,1)+'</td><td class="num tot'+(net<-1e-9?" neg":"")+'">'+fnum(net,1)+'</td></tr>';
+  }).join("");
+  return '<div class="panel"><div class="head"><div><h2>Yıllık Fire Raporu — '+y+'</h2><p>Net hesabı: devreden + yıllık fire − gönderilen atık. Değerler kg (adetliler adet) cinsindendir. NET KALAN FİRE, gelecek yılın devrine aktarılacak rakamdır.</p></div>'+
+   '<button class="btn pri" data-act="rollover"'+dis()+'>Net kalanı '+(y+1)+' devrine aktar</button></div>'+
+   (neg.length?'<div class="msg bad" style="margin-bottom:10px">KONTROL ET: '+neg.length+' üründe gönderilen atık, toplam fireyi aşıyor: '+esc(neg.join(", "))+'</div>':"")+
+   '<div id="roll-msg"></div>'+
+   '<div class="tw"><table><thead><tr><th class="name">Ürün</th><th>Birim</th>'+MONTHS.map(function(n){return '<th>'+n+'</th>'}).join("")+'<th>Yıllık V1</th><th>Yıllık V2</th><th class="tot">Yıllık Toplam</th><th>Net '+(y-1)+' Fireleri (Devir)</th><th class="tot">Toplam Fire (Devir + Yıllık)</th><th>Gönderilen Atık</th><th class="tot">Net Kalan Fire</th></tr></thead><tbody>'+tb+'</tbody></table></div></div>';
+};
+
+V.amir=function(){
+  var np=needProducts();if(np)return np;
+  if(!S.amir.from){var m=(+todayISO().slice(0,4)===S.year)?+todayISO().slice(5,7):1,r=monthRange(S.year,m);S.amir.from=r[0];S.amir.to=r[1]}
+  var f=S.amir.from,t=S.amir.to,bad=f>t;var ag=bad?{}:aggregate(f,t);
+  var days=bad?0:Math.round((dFromISO(t)-dFromISO(f))/86400000)+1;
+  var tb=(S.products.list||[]).map(function(p){var a=ag[p.id]||{v1:0,v2:0};
+    return '<tr><td class="name">'+esc(p.name)+'</td><td class="unit">'+esc(repUnit(p))+'</td><td class="num">'+fnum(toRep(p,a.v1),1)+'</td><td class="num">'+fnum(toRep(p,a.v2),1)+'</td><td class="num tot">'+fnum(toRep(p,a.v1+a.v2),1)+'</td></tr>'}).join("");
+  return '<div class="panel"><div class="head"><div><h2>Tarih Aralığı Fire Raporu (Amir Raporu)</h2><p>'+(bad?"Başlangıç tarihi bitiş tarihinden sonra olamaz.":trDate(f)+' – '+trDate(t)+' arası ('+days+' gün)')+'</p></div>'+
+   '<div class="row"><div class="field"><label for="a-from">Başlangıç tarihi</label><input type="date" id="a-from" value="'+f+'"></div><div class="field"><label for="a-to">Bitiş tarihi</label><input type="date" id="a-to" value="'+t+'"></div></div></div>'+
+   (bad?'<div class="msg bad">Tarih aralığını düzeltin.</div>':'<div class="tw"><table><thead><tr><th class="name">Ürün</th><th>Rapor Birimi</th><th>Vardiya 1</th><th>Vardiya 2</th><th class="tot">Toplam</th></tr></thead><tbody>'+tb+'</tbody></table></div>')+'</div>';
+};
+
+V.urun=function(){
+  var list=(S.products&&S.products.list)||[];
+  var used={};S.rows.forEach(function(r){used[r.pid]=1});Object.keys(S.waste).forEach(function(k){used[S.waste[k].pid]=1});
+  Object.keys(S.carry).forEach(function(k){Object.keys(S.carry[k].values||{}).forEach(function(p){used[p]=1})});
+  var rows=list.map(function(p,i){return '<tr><td class="in"><input type="text" class="note" style="width:230px" data-pi="'+i+'" data-k="name" value="'+esc(p.name)+'"'+dis()+' aria-label="Ürün adı"></td>'+
+    '<td class="in"><select data-pi="'+i+'" data-k="unit"'+dis()+'><option'+(isKg(p)?" selected":"")+'>Kg</option><option'+(isKg(p)?"":" selected")+'>Adet</option></select></td>'+
+    '<td class="unit">'+(isKg(p)?"Gram yaz":"Adet yaz")+'</td><td class="unit">'+esc(repUnit(p))+'</td>'+
+    '<td><button class="btn sm danger" data-act="pdel" data-i="'+i+'"'+(used[p.id]||!S.canWrite?' disabled title="Bu ürüne ait kayıt var, silinemez"':"")+'>Sil</button></td></tr>'}).join("");
+  var d=Object.assign({},DEFAULT_DOC,S.docinfo||{});
+  function f(id,label,val,type){return '<div class="field"><label for="di-'+id+'">'+label+'</label><input type="'+(type||"text")+'" id="di-'+id+'" data-di="'+id+'" value="'+esc(val)+'"'+dis()+'></div>'}
+  return '<div class="panel"><div class="head"><div><h2>Ürün Listesi</h2><p>Giriş birimi Kg olan kalemlerde fire gram yazılır, raporlar kg gösterir. Adet olanlarda adet yazılır. Ürün adı değiştirmek geçmiş kayıtları bozmaz.</p></div></div>'+
+   (list.length?'<div class="tw"><table><thead><tr><th class="l">Ürün Adı</th><th>Giriş Birimi</th><th>Ne yazılır?</th><th>Rapor Birimi</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>':needProducts())+
+   '<div class="row" style="margin-top:12px"><div class="field"><label for="np-name">Yeni ürün adı</label><input type="text" id="np-name" style="width:240px"></div><div class="field"><label for="np-unit">Birim</label><select id="np-unit"><option>Kg</option><option>Adet</option></select></div><button class="btn pri" data-act="padd"'+dis()+'>Ürün ekle</button></div></div>'+
+   '<div class="panel"><div class="head"><div><h2>Belge Bilgileri</h2><p>Haftalık form başlığında görünür.</p></div></div><div class="row">'+
+   f("title","Dosya başlığı",d.title)+f("docNo","Doküman No",d.docNo)+f("effective","Yürürlük tarihi",d.effective,"date")+f("rev","Rev No.",d.rev)+f("revDate","Rev tarihi",d.revDate,"date")+f("page","Sayfa No",d.page)+f("preparedBy","Hazırlayan",d.preparedBy)+'</div></div>';
+};
+
+function impHtml(){var m=S.imp;return m?'<div class="msg '+m.cls+'" style="margin-top:10px" id="imp-line">'+esc(m.text)+'</div>':""}
+function setImp(cls,text){S.imp={cls:cls,text:text};var l=$("#imp-line");if(l){l.className="msg "+cls;l.textContent=text}else{var h=$("#imp-prog");if(h)h.innerHTML=impHtml()}}
+V.excel=function(){
+  var plan=S.importPlan;
+  var prev="";
+  if(plan){
+    prev='<div class="msg ok" style="margin-top:10px"><b>'+esc(plan.fileName)+'</b> okundu:<br>'+
+     '• Ürün listesi: '+plan.products.length+' kalem'+(plan.docinfo?' + belge bilgileri':'')+'<br>'+
+     '• Fire girişi: '+plan.fireCells+' dolu hücre ('+Object.keys(plan.fire).length+' gün/vardiya)<br>'+
+     '• Atık gönderimi: '+plan.waste.length+' kayıt<br>'+
+     '• Önceki yıl devir: '+Object.keys(plan.carry.values).length+' kalem (yıl '+plan.carry.year+')'+
+     (plan.skipped?'<br>• Atlanan satır: '+plan.skipped+' (ürün adı tanınmadı ya da tarih/miktar geçersiz)':"")+
+     '</div><div class="row" style="margin-top:10px"><button class="btn pri" data-act="doimport"'+dis()+'>Verileri uygulamaya aktar</button><span class="hint">Aynı gün ve vardiyadaki hücreler Excel’dekiyle değişir; mevcut diğer kayıtlar silinmez. Aynı atık kaydı ikinci kez eklenmez.</span></div><div id="imp-prog">'+impHtml()+'</div>';
+  }
+  return '<div class="grid2"><div class="panel"><div class="head"><div><h2>Excel’den al</h2><p>Fire Takip Excel dosyanızı (.xlsm veya .xlsx) seçin. Ürün Listesi, Fire Girişi, Atık Girişi ve Önceki Yıl Devir sayfaları okunur. Dosya bu cihazda okunur, yalnızca aktardığınız kayıtlar veritabanına yazılır.</p></div></div>'+
+   '<div class="field"><label for="xfile">Excel dosyası</label><input type="file" id="xfile" accept=".xlsx,.xlsm,.xls"></div>'+prev+'<div id="imp-err"></div></div>'+
+   '<div class="panel"><div class="head"><div><h2>Excel’e ver</h2><p>Tüm kayıtları Excel dosyasına yazar: Fire Girişi, Atık Girişi, Önceki Yıl Devir, Yıllık Rapor ve Ürün Listesi sayfaları. Yedek almak ya da Excel’de incelemek için kullanın.</p></div></div>'+
+   '<button class="btn pri" data-act="xexport">Tüm verileri Excel olarak indir</button><div id="exp-msg" style="margin-top:10px"></div>'+
+   '<p class="hint" style="margin-top:12px">Not: Bu sayfa, bilgisayarınızdaki Excel dosyasına doğrudan yazamaz. Excel dosyası kaynak olarak kalır; istediğiniz zaman yeniden “Excel’den al” ile eşitleyebilir veya “Excel’e ver” ile yedek alabilirsiniz.</p></div></div>';
+};
+
+
+V.users=function(){
+ if(S.role!=="admin")return '<div class="panel"><h2>Yetki gerekli</h2></div>';
+ var us=S.userRows||[];var rows=us.map(function(u){return '<tr><td class="l">'+esc(u.email)+'</td><td>'+esc(u.role||"personel")+'</td><td>'+((u.active!==false)?'<span class="chip ok">Aktif</span>':'<span class="chip err">Pasif</span>')+'</td><td><button class="btn sm" data-user-edit="'+esc(u.email)+'">Düzenle</button> <button class="btn sm danger" data-user-toggle="'+esc(u.email)+'">'+((u.active!==false)?'Pasife al':'Aktifleştir')+'</button></td></tr>'}).join("");
+ return '<div class="panel"><div class="head"><div><h2>Kullanıcı Yönetimi</h2><p>Şirket Google Workspace ve kişisel Gmail hesaplarını buradan tanımlayın.</p></div></div><div class="grid2"><div class="field"><label for="u-email">E-posta adresi</label><input id="u-email" type="text" placeholder="personel@gmail.com"></div><div class="field"><label for="u-role">Yetki</label><select id="u-role"><option value="personel">Personel</option><option value="amir">Amir</option><option value="admin">Yönetici</option></select></div></div><div class="row" style="margin-top:10px"><button class="btn pri" data-act="user-add">Kullanıcı ekle / güncelle</button></div><div id="user-msg" style="margin-top:10px"></div></div><div class="panel"><h3>Tanımlı kullanıcılar ('+us.length+')</h3>'+(us.length?'<div class="tw"><table><thead><tr><th class="l">E-posta</th><th>Yetki</th><th>Durum</th><th>İşlem</th></tr></thead><tbody>'+rows+'</tbody></table></div>':'<div class="empty">Henüz kullanıcı yok.</div>')+'<p class="hint">Pasife alınan kullanıcının eski kayıtları silinmez. Son aktif yönetici pasife alınamaz.</p></div>';
+};
+function loadUsers(){if(S.role!=="admin")return;S.db.collection("users").orderBy("email").onSnapshot(function(sn){S.userRows=sn.docs.map(function(d){return Object.assign({id:d.id},d.data())});if(S.route==="users")render();});}
+function addOrUpdateUser(){var email=$("#u-email").value.trim().toLowerCase(),role=$("#u-role").value;if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){ $("#user-msg").innerHTML='<div class="msg bad">Geçerli e-posta girin.</div>';return;}S.db.collection("users").doc(email).set({email:email,role:role,active:true,updatedAt:new Date().toISOString(),updatedBy:S.user.email},{merge:true}).then(function(){$("#user-msg").innerHTML='<div class="msg ok">Kullanıcı kaydedildi.</div>';$ ("#u-email").value="";}).catch(function(e){$("#user-msg").textContent=e.message;});}
+function toggleUser(email){var u=(S.userRows||[]).filter(function(x){return x.email===email})[0];if(!u)return;if(u.role==="admin"&&u.active!==false&&(S.userRows||[]).filter(function(x){return x.role==="admin"&&x.active!==false}).length<=1){alert("Son aktif yönetici pasife alınamaz.");return;}S.db.collection("users").doc(email).set({active:u.active===false,updatedAt:new Date().toISOString(),updatedBy:S.user.email},{merge:true});}
+
+/* ============ yönlendirme ve çizim ============ */
+function route(){
+  var h=(location.hash||"").replace("#","");
+  S.route=PAGES.some(function(p){return p[0]===h})?h:"ana";
+}
+function render(){
+  pendingRender=false;
+  if(S.route==="users"&&S.role!=="admin")S.route="ana";
+  $("#nav").innerHTML=PAGES.filter(function(p){return p[0]!=="users"||S.role==="admin"}).map(function(p){return '<a href="#'+p[0]+'"'+(p[0]===S.route?' aria-current="page"':"")+'>'+esc(p[1])+'</a>'}).join("");
+  $("#view").innerHTML=V[S.route]();
+  var b=$("#banner");
+  if(S.canWrite===false)b.innerHTML='<div class="msg warn">Bu dosyada yazma yetkiniz yok. Veriler görüntülenebilir, kayıt yapılamaz.</div>';else b.innerHTML="";
+  afterRender();
+}
+function afterRender(){
+  if(S.route==="atik"){var s=$("#w-pid");if(s)s.addEventListener("change",function(){var p=pById(s.value);$("#w-unit").textContent=p?"("+repUnit(p)+")":""})}
+}
+window.addEventListener("hashchange",function(){route();render();window.scrollTo(0,0)});
+
+/* ============ etkileşim ============ */
+function moveDay(dir){var d=addDays(S.fireDate,dir);while(dow(d)===0||dow(d)===6)d=addDays(d,dir);S.fireDate=d;render()}
+document.addEventListener("keydown",function(e){
+  if(e.key==="Enter"&&e.target.tagName==="INPUT"&&e.target.dataset.doc&&e.target.dataset.k==="v"){
+    e.preventDefault();var all=$$('input[data-k="v"][data-sh="'+e.target.dataset.sh+'"]'),i=all.indexOf(e.target);e.target.blur();if(all[i+1])all[i+1].focus();
+  }
+});
+document.addEventListener("input",function(e){
+  var t=e.target;
+  if(t.dataset&&t.dataset.doc&&t.dataset.k==="v"){
+    var p=pById(t.dataset.pid),r=parseQty(t.value),c=$('[data-conv="'+t.dataset.doc+'|'+t.dataset.pid+'"]');
+    t.classList.toggle("bad",!!r.bad);
+    if(c)c.textContent=(r.bad?"geçersiz sayı":(r.value!=null&&isKg(p)?fnum(r.value/1000)+" kg":""));
+  }
+  if(t.dataset&&t.dataset.cpid&&t.dataset.k==="v"){t.classList.toggle("bad",!!parseQty(t.value).bad)}
+});
+document.addEventListener("change",function(e){
+  var t=e.target,id=t.id;
+  if(id==="yearsel"){S.year=+t.value;S.fireDate=null;S.weekIdx=null;S.month=null;S.amir={from:"",to:""};render();return}
+  if(id==="fdate"){if(t.value){S.fireDate=t.value;render()}return}
+  if(id==="wk-sel"){S.weekIdx=+t.value;render();return}
+  if(id==="m-sel"){S.month=+t.value;render();return}
+  if(id==="a-from"){S.amir.from=t.value;render();return}
+  if(id==="a-to"){S.amir.to=t.value;render();return}
+  if(id==="w-filter"){S.wFilter=t.value||"all";render();return}
+  if(id==="xfile"){readExcel(t.files&&t.files[0]);return}
+  if(!S.canWrite)return;
+  if(t.dataset.doc){
+    var sh=+t.dataset.sh,date=t.dataset.doc.split("_")[0];
+    if(t.dataset.k==="v"){
+      var r=parseQty(t.value);
+      if(r.bad){t.classList.add("bad");setSave("err","Geçersiz sayı: "+t.value);return}
+      t.classList.remove("bad");
+      var p=pById(t.dataset.pid);
+      if(r.empty){t.value="";t.parentNode.classList.remove("has");writeFire(t.dataset.doc,date,sh,t.dataset.pid,null,undefined);return}
+      t.value=inNum(r.value);t.parentNode.classList.add("has");
+      writeFire(t.dataset.doc,date,sh,t.dataset.pid,r.value,undefined);
+    }else writeFire(t.dataset.doc,date,sh,t.dataset.pid,undefined,t.value.trim());
+    return;
+  }
+  if(t.dataset.cpid){
+    var y=S.year-1,cur=carryFor(S.year),vals=Object.assign({},cur.values),notes=Object.assign({},cur.notes||{});
+    if(t.dataset.k==="v"){var r2=parseQty(t.value);if(r2.bad){setSave("err","Geçersiz sayı");return}if(r2.empty)delete vals[t.dataset.cpid];else{vals[t.dataset.cpid]=r2.value;t.value=inNum(r2.value)}}
+    else{if(t.value.trim()==="")delete notes[t.dataset.cpid];else notes[t.dataset.cpid]=t.value.trim()}
+    setDoc("carry/"+y,{year:y,values:vals,notes:notes});return;
+  }
+  if(t.dataset.pi!=null){
+    var list=S.products.list.map(function(p){return Object.assign({},p)}),i=+t.dataset.pi;
+    if(t.dataset.k==="name"){var nm=t.value.trim();if(!nm){setSave("err","Ürün adı boş olamaz");render();return}list[i].name=nm}else list[i].unit=t.value;
+    setDoc("config/products",{list:list});return;
+  }
+  if(t.dataset.di){
+    var d=Object.assign({},DEFAULT_DOC,S.docinfo||{});d[t.dataset.di]=t.value;setDoc("config/docinfo",d);return;
+  }
+});
+document.addEventListener("click",function(e){
+  var b=e.target.closest("[data-act]");if(!b)return;var a=b.dataset.act;
+  if(a==="fprev")return moveDay(-1);
+  if(a==="fnext")return moveDay(1);
+  if(a==="ftoday"){S.fireDate=todayISO();render();return}
+  if(a==="wkprev"){if(S.weekIdx>0){S.weekIdx--;render()}return}
+  if(a==="wknext"){if(S.weekIdx<weeksOf(S.year).length-1){S.weekIdx++;render()}return}
+  if(a==="seedproducts"){seedProducts();return}
+  if(a==="wadd")return addWaste();
+  if(a==="wdel")return confirmBtn(b,function(){wrap(S.db.doc("waste/"+b.dataset.id).delete(),"Silindi")});
+  if(a==="padd")return addProduct();
+  if(a==="pdel")return confirmBtn(b,function(){var l=S.products.list.slice();l.splice(+b.dataset.i,1);setDoc("config/products",{list:l})});
+  if(a==="rollover")return confirmBtn(b,doRollover,"Emin misiniz?");
+  if(a==="doimport")return doImport();
+  if(a==="xexport")return doExport();
+  if(a==="user-add")return addOrUpdateUser();
+});
+function confirmBtn(b,fn,label){
+  if(b.dataset.armed){fn();return}
+  var old=b.textContent;b.dataset.armed="1";b.textContent=label||"Emin misin?";
+  setTimeout(function(){if(b.isConnected){delete b.dataset.armed;b.textContent=old}},3500);
+}
+document.addEventListener("click",function(e){var t=e.target.closest("[data-user-toggle]");if(t){toggleUser(t.dataset.userToggle);return;}var ed=e.target.closest("[data-user-edit]");if(ed){var u=(S.userRows||[]).filter(function(x){return x.email===ed.dataset.userEdit})[0];if(u){$("#u-email").value=u.email;$("#u-role").value=u.role||"personel";}return;}var b=e.target.closest('[data-act="wkxlsx"]');if(b)exportWeek();});
+
+function seedProducts(){
+  var list=DEFAULT_PRODUCTS.map(function(p,i){return {id:"p"+(i+1),name:p[0],unit:p[1]}});
+  setDoc("config/products",{list:list}).then(function(){if(!S.docinfo)return setDoc("config/docinfo",DEFAULT_DOC)});
+}
+function addProduct(){
+  var n=$("#np-name").value.trim();if(!n){setSave("err","Ürün adı yazın");return}
+  if(pByName(n)){setSave("err","Bu adda bir ürün var");return}
+  var list=(S.products&&S.products.list||[]).slice(),max=0;list.forEach(function(p){var k=+String(p.id).replace(/\D/g,"");if(k>max)max=k});
+  list.push({id:"p"+(max+1),name:n,unit:$("#np-unit").value});setDoc("config/products",{list:list});
+}
+function addWaste(){
+  var el=$("#w-err");function fail(m){el.hidden=false;el.textContent=m}
+  var date=$("#w-date").value,pid=$("#w-pid").value,q=parseQty($("#w-qty").value);
+  if(!date)return fail("Tarih seçin.");if(!pid)return fail("Ürün seçin.");
+  if(q.empty||q.bad||!(q.value>0))return fail("Miktar sıfırdan büyük bir sayı olmalı.");
+  el.hidden=true;
+  wrap(S.db.collection("waste").add({date:date,pid:pid,qty:q.value,ref:$("#w-ref").value.trim(),buyer:$("#w-buyer").value.trim(),note:$("#w-note").value.trim(),createdAt:new Date().toISOString(),createdBy:S.user.email,createdByName:S.user.displayName||S.user.email}),"Atık kaydı eklendi").then(function(){
+    ["w-qty","w-ref","w-buyer","w-note"].forEach(function(i){var x=$("#"+i);if(x)x.value=""});var q2=$("#w-qty");if(q2)q2.focus();
+  });
+}
+function doRollover(){
+  var y=S.year,ag=aggregate(y+"-01-01",y+"-12-31"),wt=wasteTotals(y+"-01-01",y+"-12-31"),c=carryFor(y),vals={};
+  S.products.list.forEach(function(p){var a=ag[p.id]||{v1:0,v2:0},net=toRep(p,a.v1+a.v2)+(+c.values[p.id]||0)-(wt[p.id]||0);vals[p.id]=Math.round(net*1000)/1000});
+  setDoc("carry/"+y,{year:y,values:vals,notes:{}}).then(function(){var m=$("#roll-msg");if(m)m.innerHTML='<div class="msg ok" style="margin-bottom:10px">Net kalan fire '+(y+1)+' yılının Önceki Yıl Devir sayfasına yazıldı.</div>'});
+}
+
+/* ============ Excel okuma ============ */
+function cellVal(ws,r,c){var a=XLSX.utils.encode_cell({r:r-1,c:c-1}),x=ws[a];return x?x.v:undefined}
+function cellDate(v){
+  if(v==null||v==="")return null;
+  if(typeof v==="number"&&v>20000&&v<80000){var o=XLSX.SSF.parse_date_code(v);return iso(o.y,o.m,o.d)}
+  if(v instanceof Date)return iso(v.getFullYear(),v.getMonth()+1,v.getDate());
+  var s=String(v).trim(),m=s.match(/^(\d{1,2})[.\/](\d{1,2})[.\/](\d{4})$/);if(m)return iso(+m[3],+m[2],+m[1]);
+  m=s.match(/^(\d{4})-(\d{2})-(\d{2})/);if(m)return m[1]+"-"+m[2]+"-"+m[3];return null;
+}
+function cellNum(v){if(typeof v==="number")return v;if(v==null)return null;var r=parseQty(v);return r.value!=null?r.value:null}
+function findSheet(wb,name){var k=wb.SheetNames.filter(function(n){return n.trim().toLowerCase()===name.toLowerCase()})[0];return k?wb.Sheets[k]:null}
+function readExcel(file){
+  var err=$("#imp-err");err.innerHTML="";S.importPlan=null;S.imp=null;
+  if(!file)return render();
+  if(typeof XLSX==="undefined"){err.innerHTML='<div class="msg bad">Excel okuyucu yüklenemedi (internet bağlantısı gerekir).</div>';return}
+  var fr=new FileReader();
+  fr.onerror=function(){err.innerHTML='<div class="msg bad">Dosya okunamadı.</div>'};
+  fr.onload=function(){
+    try{
+      var wb=XLSX.read(fr.result,{type:"array",cellDates:false});
+      var pl={fileName:file.name,products:[],docinfo:null,fire:{},fireCells:0,waste:[],carry:{year:S.year-1,values:{},notes:{}},skipped:0};
+      var up=findSheet(wb,"Ürün Listesi");
+      if(!up)throw new Error("“Ürün Listesi” sayfası bulunamadı. Bu dosya Fire Takip dosyası değil gibi görünüyor.");
+      for(var r=4;r<=60;r++){var n=cellVal(up,r,1);if(n==null||String(n).trim()===""||/BELGE B/i.test(String(n)))break;var u=String(cellVal(up,r,2)||"Adet").trim();pl.products.push({name:String(n).trim(),unit:/^kg$/i.test(u)?"Kg":"Adet"})}
+      var di={},hasDoc=false;
+      for(var r2=20;r2<=40;r2++){var k=String(cellVal(up,r2,1)||"").trim(),v=cellVal(up,r2,2);if(!k||v==null)continue;
+        if(/Dosya Ba/i.test(k)){di.title=String(v);hasDoc=true}else if(/Dok.man No/i.test(k)){di.docNo=String(v);hasDoc=true}else if(/Y.r.rl.k/i.test(k)){di.effective=cellDate(v)||"";hasDoc=true}
+        else if(/Rev/i.test(k)){di.rev=String(v);hasDoc=true}else if(/Sayfa/i.test(k)){di.page=String(v);hasDoc=true}else if(/Haz.rlayan/i.test(k)){di.preparedBy=String(v);hasDoc=true}}
+      if(hasDoc)pl.docinfo=Object.assign({},DEFAULT_DOC,di);
+      var nameToId={},existing=(S.products&&S.products.list)||[];
+      pl.products.forEach(function(p,i){var m=existing.filter(function(e){return e.name.trim().toLowerCase()===p.name.toLowerCase()})[0];p.id=m?m.id:"p"+(i+1)});
+      var used={};pl.products.forEach(function(p){used[p.id]=1});
+      pl.products.forEach(function(p,i){if(used[p.id]&&pl.products.filter(function(q){return q.id===p.id}).length>1)p.id="p"+(100+i)});
+      pl.products.forEach(function(p){nameToId[p.name.toLowerCase()]=p.id});
+      var fs=findSheet(wb,"Fire Girişi");
+      if(fs){var rng=XLSX.utils.decode_range(fs["!ref"]);
+        for(var i=4;i<=rng.e.r+1;i++){
+          var val=cellVal(fs,i,7);if(val==null||val==="")continue;
+          var q=cellNum(val),date=cellDate(cellVal(fs,i,1)),sv=String(cellVal(fs,i,3)||""),sh=/2/.test(sv)?2:/1/.test(sv)?1:0,pid=nameToId[String(cellVal(fs,i,5)||"").trim().toLowerCase()];
+          if(q==null||q<0||!date||!sh||!pid){pl.skipped++;continue}
+          var key=date+"_"+sh,d=pl.fire[key]||(pl.fire[key]={date:date,shift:sh,values:{},notes:{}});
+          d.values[pid]=Math.round(q*1e6)/1e6;pl.fireCells++;
+          var nt=cellVal(fs,i,8);if(nt!=null&&String(nt).trim()!=="")d.notes[pid]=String(nt).trim();
+        }}
+      var as=findSheet(wb,"Atık Girişi");
+      if(as){var r3=XLSX.utils.decode_range(as["!ref"]);
+        for(var j=4;j<=r3.e.r+1;j++){
+          var q3=cellNum(cellVal(as,j,3)),pn=cellVal(as,j,2);if(q3==null&&(pn==null||pn===""))continue;
+          var dt=cellDate(cellVal(as,j,1)),pid3=nameToId[String(pn||"").trim().toLowerCase()];
+          if(q3==null||!(q3>0)||!dt||!pid3){pl.skipped++;continue}
+          pl.waste.push({date:dt,pid:pid3,qty:q3,ref:String(cellVal(as,j,5)||"").trim(),buyer:String(cellVal(as,j,6)||"").trim(),note:String(cellVal(as,j,7)||"").trim()});
+        }}
+      var cs=findSheet(wb,"Önceki Yıl Devir");
+      if(cs){var cy=cellVal(cs,2,2);if(typeof cy==="number")pl.carry.year=cy;
+        for(var k2=4;k2<=60;k2++){var cn=cellVal(cs,k2,1);if(cn==null||String(cn).trim()==="")break;var cp=nameToId[String(cn).trim().toLowerCase()],cv=cellNum(cellVal(cs,k2,3));
+          if(cp&&cv!=null)pl.carry.values[cp]=cv;var cnote=cellVal(cs,k2,4);if(cp&&cnote!=null&&String(cnote).trim()!=="")pl.carry.notes[cp]=String(cnote).trim()}}
+      S.importPlan=pl;render();
+    }catch(ex){S.importPlan=null;render();$("#imp-err").innerHTML='<div class="msg bad">'+esc(ex.message||"Dosya okunamadı")+'</div>'}
+  };
+  fr.readAsArrayBuffer(file);
+}
+function doImport(){
+  var pl=S.importPlan;if(!pl||!S.canWrite)return;
+  var prog=$("#imp-prog"),tasks=[];
+  function t(fn){tasks.push(fn)}
+  var list=pl.products.map(function(p){return {id:p.id,name:p.name,unit:p.unit}});
+  var curIds={};((S.products&&S.products.list)||[]).forEach(function(p){curIds[p.id]=1});
+  ((S.products&&S.products.list)||[]).forEach(function(p){if(!list.some(function(q){return q.id===p.id}))list.push(p)});
+  t(function(){return S.db.doc("config/products").set({list:list})});
+  if(pl.docinfo)t(function(){return S.db.doc("config/docinfo").set(pl.docinfo)});
+  Object.keys(pl.fire).forEach(function(k){
+    var inc=pl.fire[k];
+    t(function(){return enqueue("fire/"+k,function(){
+      var cur=S.fire[k]||{values:{},notes:{}},values=Object.assign({},cur.values||{},inc.values),notes=Object.assign({},cur.notes||{},inc.notes);
+      return S.db.doc("fire/"+k).set({date:inc.date,shift:inc.shift,values:values,notes:notes,updatedAt:new Date().toISOString()});
+    })});
+  });
+  var have={};Object.keys(S.waste).forEach(function(id){var w=S.waste[id];have[w.date+"|"+w.pid+"|"+w.qty+"|"+(w.ref||"")]=1});
+  var addedW=0;pl.waste.forEach(function(w){var key=w.date+"|"+w.pid+"|"+w.qty+"|"+w.ref;if(have[key])return;have[key]=1;addedW++;t(function(){return S.db.collection("waste").add(Object.assign({createdAt:new Date().toISOString()},w))})});
+  if(Object.keys(pl.carry.values).length)t(function(){return S.db.doc("carry/"+pl.carry.year).set({year:pl.carry.year,values:pl.carry.values,notes:pl.carry.notes})});
+  var total=tasks.length,done=0,failed=0,i=0;
+  setSave("busy","Aktarılıyor…");setImp("","Aktarılıyor: 0 / "+total);
+  function sleep(ms){return new Promise(function(r){setTimeout(r,ms)})}
+  function run(fn,tries){return fn().catch(function(e){if(tries>0&&e&&(e.code==="resource_exhausted"||e.code==="unavailable"))return sleep(700+Math.random()*600).then(function(){return run(fn,tries-1)});throw e})}
+  function worker(){
+    if(i>=tasks.length)return Promise.resolve();
+    var fn=tasks[i++];
+    return run(fn,4).then(function(){done++},function(){failed++}).then(function(){setImp("","Aktarılıyor: "+(done+failed)+" / "+total);return worker()});
+  }
+  Promise.all([worker(),worker(),worker(),worker()]).then(function(){
+    setSave(failed?"err":"ok",failed?failed+" kayıt aktarılamadı":"Aktarım tamamlandı");
+    setImp(failed?"bad":"ok",failed?(done+" kayıt aktarıldı, "+failed+" kayıt aktarılamadı. Aynı dosyayı yeniden seçip tekrar deneyebilirsiniz."):("Tamamlandı: "+done+" kayıt aktarıldı"+(addedW<pl.waste.length?" (tekrar eden "+(pl.waste.length-addedW)+" atık kaydı atlandı)":"")+"."));
+  });
+}
+
+/* ============ Excel yazma ============ */
+function saveXlsx(wb,name,msgEl){var buf=XLSX.write(wb,{type:"array",bookType:"xlsx"});var blob=new Blob([buf],{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});var url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(url)},1500);msgEl&&(msgEl.innerHTML='<div class="msg ok">Dosya indirildi: '+esc(name)+'</div>');}
+function doExport(){
+  var msg=$("#exp-msg");
+  if(typeof XLSX==="undefined"){msg.innerHTML='<div class="msg bad">Excel yazıcı yüklenemedi.</div>';return}
+  if(!S.products){msg.innerHTML='<div class="msg bad">Önce ürün listesi yüklenmeli.</div>';return}
+  var wb=XLSX.utils.book_new(),plist=S.products.list;
+  var fr=[["Tarih","Gün","Vardiya","Saat","Ürün","Birim","Fire Miktarı","Açıklama","Rapor Miktarı (kg / adet)","Ay"]];
+  var rows=S.rows.slice().sort(function(a,b){return a.date<b.date?-1:a.date>b.date?1:a.shift-b.shift});
+  rows.forEach(function(r){var p=pById(r.pid);if(!p)return;var d=S.fire[r.date+"_"+r.shift],n=d&&d.notes&&d.notes[r.pid]||"";
+    fr.push([trDate(r.date),DAYS3[dow(r.date)],SHIFTS[r.shift].name,SHIFTS[r.shift].hours,p.name,p.unit,r.v,n,toRep(p,r.v),+r.date.slice(5,7)])});
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(fr),"Fire Girişi");
+  var wr=[["Tarih","Ürün","Gönderilen Miktar","Birim","İrsaliye / Belge No","Alıcı Firma","Açıklama"]];
+  Object.keys(S.waste).map(function(k){return S.waste[k]}).sort(function(a,b){return a.date<b.date?-1:1}).forEach(function(w){var p=pById(w.pid);wr.push([trDate(w.date),p?p.name:w.pid,w.qty,p?repUnit(p):"",w.ref||"",w.buyer||"",w.note||""])});
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(wr),"Atık Girişi");
+  var c=carryFor(S.year),cr=[["Ürün","Rapor Birimi","Devreden Miktar (kg / adet)","Açıklama","Devir yılı",S.year-1]];
+  plist.forEach(function(p){cr.push([p.name,repUnit(p),c.values[p.id]==null?"":c.values[p.id],c.notes&&c.notes[p.id]||""])});
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(cr),"Önceki Yıl Devir");
+  var y=S.year,yr=aggregate(y+"-01-01",y+"-12-31"),wt=wasteTotals(y+"-01-01",y+"-12-31"),mon=[];
+  for(var m=1;m<=12;m++){var r=monthRange(y,m);mon.push(aggregate(r[0],r[1]))}
+  var yh=[["Ürün","Birim"].concat(MONTHS,["Yıllık V1","Yıllık V2","Yıllık Toplam","Devir","Toplam Fire","Gönderilen Atık","Net Kalan Fire"])];
+  plist.forEach(function(p){var line=[p.name,repUnit(p)];mon.forEach(function(g){var a=g[p.id]||{v1:0,v2:0};line.push(toRep(p,a.v1+a.v2))});
+    var a=yr[p.id]||{v1:0,v2:0},v1=toRep(p,a.v1),v2=toRep(p,a.v2),dv=+c.values[p.id]||0,wst=wt[p.id]||0;line.push(v1,v2,v1+v2,dv,v1+v2+dv,wst,v1+v2+dv-wst);yh.push(line)});
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(yh),"Yıllık Rapor");
+  var pr=[["Ürün Adı","Giriş Birimi","Ne yazılır?","Rapor Birimi"]];plist.forEach(function(p){pr.push([p.name,p.unit,isKg(p)?"Gram yaz":"Adet yaz",repUnit(p)])});
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(pr),"Ürün Listesi");
+  saveXlsx(wb,"Hammadde_Fire_Takip_"+S.year+"_"+todayISO()+".xlsx",msg);
+}
+function exportWeek(){
+  if(typeof XLSX==="undefined"||!S.products)return;
+  var ws=weeksOf(S.year),w=ws[S.weekIdx],days=[0,1,2,3,4].map(function(i){return addDays(w.mon,i)});
+  var d=Object.assign({},DEFAULT_DOC,S.docinfo||{});
+  var ag=aggregate(days[0],days[4]),per={};S.rows.forEach(function(r){if(r.date>=days[0]&&r.date<=days[4])per[r.pid+"|"+r.date+"|"+r.shift]=(per[r.pid+"|"+r.date+"|"+r.shift]||0)+r.v});
+  var a=[[d.title,"","","","","","","","","","Doküman No:",d.docNo],["HAZIRLAYAN :",d.preparedBy,"","","","","","","","","Yürürlük Tarihi:",trDate(d.effective)],
+    ["TARİH ARALIĞI",w.label,"","","","","","","","","Rev No./Tarihi:",d.rev+" / "+trDate(d.revDate)],["","","","","","","","","","","Sayfa No:",d.page],[]];
+  var h1=["Ürün","Birim"],h2=["",""],h3=["",""];
+  days.forEach(function(x,i){h1.push(DAYS[i+1].toLocaleUpperCase("tr-TR"),"");h2.push(trDate(x),"");h3.push("V1 08:00-17:30","V2 17:30-02:30")});
+  h1.push("VARDİYA 1 TOPLAM","VARDİYA 2 TOPLAM","TOPLAM","RAPOR TOPLAMI (kg / adet)");h2.push("","","","");h3.push("","","","");
+  a.push(h1,h2,h3);
+  S.products.list.forEach(function(p){var line=[p.name,p.unit],t=ag[p.id]||{v1:0,v2:0};
+    days.forEach(function(x){[1,2].forEach(function(sh){var v=per[p.id+"|"+x+"|"+sh];line.push(v==null?"":v)})});
+    line.push(t.v1,t.v2,t.v1+t.v2,toRep(p,t.v1+t.v2));a.push(line)});
+  a.push([],["Kg birimli kalemler gram olarak girilir; son sütun kg'a çevrilmiş (adetliler adet) toplamdır."]);
+  var wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(a),"Haftalık Form");
+  saveXlsx(wb,"Haftalik_Form_"+w.mon+".xlsx",null);
+}
+
+/* ============ Google Firebase başlangıç ============ */
+function showLogin(message){$("#login-screen").style.display="grid";$("#application").style.display="none";var e=$("#login-error");e.hidden=!message;e.textContent=message||"";}
+function showApp(){$("#login-screen").style.display="none";$("#application").style.display="grid";}
+function boot(){
+ $("#todaychip").textContent="Bugün: "+trDate(todayISO())+" "+DAYS[dow(todayISO())];var ys=$("#yearsel"),opts="";for(var y=2026;y<=2035;y++)opts+='<option value="'+y+'"'+(y===S.year?" selected":"")+'>'+y+'</option>';ys.innerHTML=opts;route();render();
+ if(!window.firebase||!firebase.apps||!firebase.apps.length){showLogin("firebase-config.js ayarlarını doldurun.");return;}
+ $("#google-login").addEventListener("click",function(){firebase.auth().signInWithPopup(new firebase.auth.GoogleAuthProvider()).catch(function(e){showLogin("Giriş başarısız: "+e.message);});});
+ $("#logout-btn").addEventListener("click",function(){firebase.auth().signOut();});
+ firebase.auth().onAuthStateChanged(function(user){if(!user){S.db=null;S.user=null;S.canWrite=false;showLogin();return;}var email=(user.email||"").toLowerCase(),db=firebase.firestore();db.collection("users").doc(email).get().then(function(doc){if(!doc.exists||doc.data().active!==true){firebase.auth().signOut();showLogin("Bu hesap yetkili değil. Yöneticinizden kullanıcı eklemesini isteyin.");return;}var p=doc.data();S.db=db;S.user={uid:user.uid,email:email,displayName:user.displayName||email};S.role=p.role||"personel";S.canWrite=(S.role==="personel"||S.role==="admin");$("#userchip").textContent=email+" · "+({personel:"Personel",amir:"Amir",admin:"Yönetici"}[S.role]||S.role);showApp();route();render();subscribe();loadUsers();}).catch(function(e){showLogin("Yetki kontrolü başarısız: "+e.message);});});
+}
+boot();
+</script>
+
+</body></html>
