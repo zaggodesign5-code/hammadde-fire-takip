@@ -780,19 +780,133 @@ function exportWeek(){
 }
 
 /* ============ Google Firebase başlangıç ============ */
-function showLogin(message){$("#login-screen").style.display="grid";$("#application").style.display="none";var e=$("#login-error");e.hidden=!message;e.textContent=message||"";}
-function showApp(){$("#login-screen").style.display="none";$("#application").style.display="grid";}
-function boot(){
- $("#todaychip").textContent="Bugün: "+trDate(todayISO())+" "+DAYS[dow(todayISO())];var ys=$("#yearsel"),opts="";for(var y=2026;y<=2035;y++)opts+='<option value="'+y+'"'+(y===S.year?" selected":"")+'>'+y+'</option>';ys.innerHTML=opts;route();render();
- if(!window.firebase||!firebase.apps||!firebase.apps.length){showLogin("firebase-config.js ayarlarını doldurun.");return;}
- $("#google-login").addEventListener("click",function(){
-   var btn=$("#google-login");btn.disabled=true;btn.textContent="Google'a yönlendiriliyorsunuz…";
-   firebase.auth().signInWithRedirect(new firebase.auth.GoogleAuthProvider()).catch(function(e){btn.disabled=false;btn.textContent="Google hesabıyla giriş yap";showLogin("Giriş başlatılamadı: "+e.code+" — "+e.message);});
- });
- firebase.auth().getRedirectResult().catch(function(e){showLogin("Google girişi tamamlanamadı: "+e.code+" — "+e.message);});
- $("#logout-btn").addEventListener("click",function(){firebase.auth().signOut();});
- firebase.auth().onAuthStateChanged(function(user){if(!user){S.db=null;S.user=null;S.canWrite=false;showLogin();return;}var email=(user.email||"").toLowerCase(),db=firebase.firestore();db.collection("users").doc(email).get().then(function(doc){if(!doc.exists||doc.data().active!==true){firebase.auth().signOut();showLogin("Bu hesap yetkili değil. Yöneticinizden kullanıcı eklemesini isteyin.");return;}var p=doc.data();S.db=db;S.user={uid:user.uid,email:email,displayName:user.displayName||email};S.role=p.role||"personel";S.canWrite=(S.role==="personel"||S.role==="admin");$("#userchip").textContent=email+" · "+({personel:"Personel",amir:"Amir",admin:"Yönetici"}[S.role]||S.role);showApp();route();render();subscribe();loadUsers();}).catch(function(e){showLogin("Yetki kontrolü başarısız: "+e.message);});});
+
+/* ============ Google Firebase başlangıç ============ */
+function showLogin(message) {
+  $("#login-screen").style.display = "grid";
+  $("#application").style.display = "none";
+  var e = $("#login-error");
+  e.hidden = !message;
+  e.textContent = message || "";
 }
+
+function showApp() {
+  $("#login-screen").style.display = "none";
+  $("#application").style.display = "grid";
+}
+
+function boot() {
+  $("#todaychip").textContent =
+    "Bugün: " + trDate(todayISO()) + " " + DAYS[dow(todayISO())];
+
+  var ys = $("#yearsel"), opts = "";
+  for (var y = 2026; y <= 2035; y++) {
+    opts += '<option value="' + y + '"' +
+      (y === S.year ? " selected" : "") + '>' + y + '</option>';
+  }
+  ys.innerHTML = opts;
+  route();
+  render();
+
+  if (!window.firebase || !firebase.apps || !firebase.apps.length) {
+    showLogin("Firebase bağlantısı başlatılamadı. Yapılandırmayı kontrol edin.");
+    return;
+  }
+
+  var auth = firebase.auth();
+  var db = firebase.firestore();
+
+  $("#google-login").addEventListener("click", function () {
+    var btn = $("#google-login");
+    btn.disabled = true;
+    btn.textContent = "Google'a yönlendiriliyorsunuz...";
+
+    auth.signInWithRedirect(
+      new firebase.auth.GoogleAuthProvider()
+    ).catch(function (e) {
+      btn.disabled = false;
+      btn.textContent = "Google hesabıyla giriş yap";
+      showLogin("Google giriş hatası: " + e.code + " - " + e.message);
+    });
+  });
+
+  auth.getRedirectResult().catch(function (e) {
+    showLogin("Google yönlendirme hatası: " + e.code + " - " + e.message);
+  });
+
+  $("#logout-btn").addEventListener("click", function () {
+    auth.signOut();
+  });
+
+  auth.onAuthStateChanged(function (user) {
+    if (!user) {
+      S.db = null;
+      S.user = null;
+      S.canWrite = false;
+      showLogin();
+      return;
+    }
+
+    showLogin("Google girişi başarılı. Kullanıcı yetkisi kontrol ediliyor...");
+
+    var email = (user.email || "").toLowerCase();
+
+    if (!email) {
+      showLogin("Google hesabından e-posta bilgisi alınamadı.");
+      return;
+    }
+
+    db.collection("users").doc(email).get()
+      .then(function (doc) {
+        if (!doc.exists) {
+          showLogin("Kullanıcı kaydı bulunamadı: " + email);
+          return;
+        }
+
+        var p = doc.data();
+
+        if (p.active !== true) {
+          showLogin("Kullanıcı pasif durumda. Yöneticiyle görüşün.");
+          return;
+        }
+
+        if (!["personel", "amir", "admin"].includes(p.role)) {
+          showLogin("Kullanıcı rolü hatalı: " + p.role);
+          return;
+        }
+
+        S.db = db;
+        S.user = {
+          uid: user.uid,
+          email: email,
+          displayName: user.displayName || email
+        };
+
+        S.role = p.role;
+        S.canWrite = p.role === "personel" || p.role === "admin";
+
+        $("#userchip").textContent = email + " · " +
+          ({personel:"Personel", amir:"Amir", admin:"Yönetici"}[p.role]);
+
+        showApp();
+        route();
+        render();
+        subscribe();
+
+        if (p.role === "admin") {
+          loadUsers();
+        }
+      })
+      .catch(function (e) {
+        showLogin(
+          "Firestore kullanıcı kontrolü başarısız.\n" +
+          "Kod: " + (e.code || "bilinmiyor") +
+          "\nAçıklama: " + (e.message || e)
+        );
+      });
+  });
+}
+
 boot();
 </script>
 
