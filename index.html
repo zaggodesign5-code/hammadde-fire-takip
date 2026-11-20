@@ -785,7 +785,11 @@ function showApp(){$("#login-screen").style.display="none";$("#application").sty
 function boot(){
  $("#todaychip").textContent="Bugün: "+trDate(todayISO())+" "+DAYS[dow(todayISO())];var ys=$("#yearsel"),opts="";for(var y=2026;y<=2035;y++)opts+='<option value="'+y+'"'+(y===S.year?" selected":"")+'>'+y+'</option>';ys.innerHTML=opts;route();render();
  if(!window.firebase||!firebase.apps||!firebase.apps.length){showLogin("firebase-config.js ayarlarını doldurun.");return;}
- $("#google-login").addEventListener("click",function(){firebase.auth().signInWithPopup(new firebase.auth.GoogleAuthProvider()).catch(function(e){showLogin("Giriş başarısız: "+e.message);});});
+ $("#google-login").addEventListener("click",function(){
+   var btn=$("#google-login");btn.disabled=true;btn.textContent="Google'a yönlendiriliyorsunuz…";
+   firebase.auth().signInWithRedirect(new firebase.auth.GoogleAuthProvider()).catch(function(e){btn.disabled=false;btn.textContent="Google hesabıyla giriş yap";showLogin("Giriş başlatılamadı: "+e.code+" — "+e.message);});
+ });
+ firebase.auth().getRedirectResult().catch(function(e){showLogin("Google girişi tamamlanamadı: "+e.code+" — "+e.message);});
  $("#logout-btn").addEventListener("click",function(){firebase.auth().signOut();});
  firebase.auth().onAuthStateChanged(function(user){if(!user){S.db=null;S.user=null;S.canWrite=false;showLogin();return;}var email=(user.email||"").toLowerCase(),db=firebase.firestore();db.collection("users").doc(email).get().then(function(doc){if(!doc.exists||doc.data().active!==true){firebase.auth().signOut();showLogin("Bu hesap yetkili değil. Yöneticinizden kullanıcı eklemesini isteyin.");return;}var p=doc.data();S.db=db;S.user={uid:user.uid,email:email,displayName:user.displayName||email};S.role=p.role||"personel";S.canWrite=(S.role==="personel"||S.role==="admin");$("#userchip").textContent=email+" · "+({personel:"Personel",amir:"Amir",admin:"Yönetici"}[S.role]||S.role);showApp();route();render();subscribe();loadUsers();}).catch(function(e){showLogin("Yetki kontrolü başarısız: "+e.message);});});
 }
